@@ -67,13 +67,36 @@ contract Auction{
     modifier not_moderator(address user){
         require(msg.sender != moderator, "Moderator cannot register for auction"); _;
     }
-
+    // The function to generate a random no in range [0,n)
+    function random(uint n) private view returns (uint8) {
+        return uint8(uint256(keccak256(block.timestamp, block.difficulty))%n);
+    }
     // length getter functions for notary and bidder used in testing
     function getnotary() public view returns (uint){
         return notaries.length;
     }
     function getbidder() public view returns (uint){
         return bidders.length;
+    }
+    /*
+        The function to assign a random notary among the free_notaries available
+    */
+    function assign_notary(Bidder x) private {
+        uint8 ind = random(free_notaries);
+        free_notaries -= 1;
+        for(uint i=0;i<notaries.length;i++){
+            if(valid_notaries[notaries[i].account_id]==1){
+                if(ind == 0){
+                    bidder_of[notaries[i].account_id] = x.account_id;
+                    valid_notaries[notaries[i].account_id] = 2;
+                }
+                ind--;
+            }
+        }
+    }
+    // Testing function to test if bidder is assigned a notary
+    function bidder_of_a(address x) public view returns (address a) {
+        return bidder_of[x];
     }
     /*
         The function to register a valid distinct notary which is not an auctioneer and
@@ -95,6 +118,9 @@ contract Auction{
     function register_bidder(uint[] _u,uint[] _v,uint _w1, uint _w2) external before_deadline not_moderator(msg.sender) {
         require(_u.length == _v.length, "Wrong input set");
         require(_u.length <= m, "invalid size");
+        require(valid_bidders[msg.sender]==0, "Bidder already registered");
+        require(free_notaries > 0, "Notaries not available");
+        require(valid_notaries[msg.sender] == 0, "Notary cannot be bidder");
         uint item;
         uint[] memory bid_items = new uint[](m);
         bool is_item;
@@ -113,6 +139,8 @@ contract Auction{
             }
             bid_items[i] = item;
         }
+        assign_notary(Bidder({account_id: msg.sender, u: _u, v:_v, w1: _w1, w2: _w2}));
         bidders.push(Bidder({account_id: msg.sender, u: _u, v:_v, w1: _w1, w2: _w2}));
+        valid_bidders[msg.sender] = 1;
     }
 }
