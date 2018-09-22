@@ -60,12 +60,20 @@ contract Auction{
         q = _q;
         free_notaries = 0;
     }
-    
+
     modifier before_deadline {
         require(now < input_deadline, "Deadline passed"); _;
     }
     modifier not_moderator(address user){
         require(msg.sender != moderator, "Moderator cannot register for auction"); _;
+    }
+
+    // length getter functions for notary and bidder used in testing
+    function getnotary() public view returns (uint){
+        return notaries.length;
+    }
+    function getbidder() public view returns (uint){
+        return bidders.length;
     }
     /*
         The function to register a valid distinct notary which is not an auctioneer and
@@ -77,5 +85,34 @@ contract Auction{
         notaries.push(Notary({account_id: msg.sender}));
         valid_notaries[msg.sender] = 1;
         free_notaries += 1;
-    }    
+    }
+    /*
+        The function to register a bidder before input_deadline and with all the preconditions satisfied
+        i.e. The input set contains valid and distinct items.
+            A bidder cannot register multiple times.
+            A bidder cannot be registered as a notary before.
+    */
+    function register_bidder(uint[] _u,uint[] _v,uint _w1, uint _w2) external before_deadline not_moderator(msg.sender) {
+        require(_u.length == _v.length, "Wrong input set");
+        require(_u.length <= m, "invalid size");
+        uint item;
+        uint[] memory bid_items = new uint[](m);
+        bool is_item;
+        for(uint i=0;i<_u.length;i++){
+            item = (_u[i] + _v[i])%q;
+            require(item <= m && item > 0, "Input set does not contain a valid item");
+            if(i>0){
+                is_item = false;
+                for(uint j=0;j<i;j++){
+                    if(bid_items[j] == item){
+                        is_item = true;
+                        break;
+                    }
+                }
+                require(is_item == false, "The set should contain distince elements");                
+            }
+            bid_items[i] = item;
+        }
+        bidders.push(Bidder({account_id: msg.sender, u: _u, v:_v, w1: _w1, w2: _w2}));
+    }
 }
