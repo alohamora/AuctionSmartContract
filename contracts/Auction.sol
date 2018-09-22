@@ -31,4 +31,25 @@ contract Auction{
     struct Notary{
         address account_id;
     }
+    mapping(address => address) private bidder_of;
+    mapping(address => uint) private valid_bidders;
+    mapping(address => uint) private valid_notaries;
+    mapping(uint => uint) private items_sold;
+
+    /*
+        The arrays for storing registered bidders, notaries and the final winners of the auction
+    */
+    Bidder[] private bidders;
+    Bidder[] public winners;
+    Notary[] private notaries;
+    Bidder temp;
+    
+    constructor (uint _items, uint _q, uint _deadline) public{
+        input_deadline = now + _deadline;
+        moderator = msg.sender;
+        m = _items;
+        q = _q;
+        free_notaries = 0;
+    }
+    
 }
