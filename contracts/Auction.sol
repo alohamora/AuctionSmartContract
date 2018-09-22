@@ -31,6 +31,15 @@ contract Auction{
     struct Notary{
         address account_id;
     }
+    /*
+        bidder_of -> mapping of notary and and bidder assigned to notary:
+            if  bidder_of(notary_address) = 0 i.e. no bidder assigned
+            else    bidder_of(notary_address) = assigned_bidder_address
+        valid_bidders -> mapping of bidders registered till now.
+        valid_notaries -> mapping of notaries registered till now and also if notary is assigned to a bidder or not
+            e.g valid_notaries(notary_add) = 1 i.e. notary is registered.
+                valid_notaries(notary_add) = 2 i.e. notary has been assigned a bidder
+    */
     mapping(address => address) private bidder_of;
     mapping(address => uint) private valid_bidders;
     mapping(address => uint) private valid_notaries;
@@ -52,4 +61,21 @@ contract Auction{
         free_notaries = 0;
     }
     
+    modifier before_deadline {
+        require(now < input_deadline, "Deadline passed"); _;
+    }
+    modifier not_moderator(address user){
+        require(msg.sender != moderator, "Moderator cannot register for auction"); _;
+    }
+    /*
+        The function to register a valid distinct notary which is not an auctioneer and
+        is registered before the input_deadline.
+    */
+    function register_notary() external before_deadline not_moderator(msg.sender) {
+        require(valid_notaries[msg.sender] == 0, "Notary already registered");
+        require(valid_bidders[msg.sender] == 0, "Bidder cannot be a notary");
+        notaries.push(Notary({account_id: msg.sender}));
+        valid_notaries[msg.sender] = 1;
+        free_notaries += 1;
+    }    
 }
