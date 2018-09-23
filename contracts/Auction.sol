@@ -179,13 +179,16 @@ contract Auction{
             qsort(l, j);
         }
     }
+    function get_winner_w1() public view returns(uint){
+        return winners[0].w2;
+    }
     /*
         The declare bidders function, can be called only by auctioneer after input deadline is passed.
         The function sorts the bidders by their values and then adds to the winner list.
     */
-    function declare_winners() public returns (uint){
+    function declare_winners() public{
         require(msg.sender == moderator, "Only auctioneer can declare the winners");
-        require(now > input_deadline + 100, "The winners can be declared after the deadline");
+        // require(now > input_deadline + 100, "The winners can be declared after the deadline");
         bool distinct_items;
         uint items_count = 0;
         uint item;
@@ -212,6 +215,5 @@ contract Auction{
                 winners.push(bidders[len-i]);
             }
         }
-        return item;
     }
 }
