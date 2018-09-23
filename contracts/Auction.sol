@@ -143,4 +143,40 @@ contract Auction{
         bidders.push(Bidder({account_id: msg.sender, u: _u, v:_v, w1: _w1, w2: _w2}));
         valid_bidders[msg.sender] = 1;
     }
+
+    // The helper function to compare values in quick sort
+    function compare(uint x, uint y) internal view returns(bool){
+        uint val1 = bidders[x].w1 - bidders[y].w1;
+        uint val2 = bidders[x].w2 - bidders[y].w2;
+        val1 = (val1+val2)%q;
+        if(val1 < (q/2)){
+            return true;    // x >= y
+        }
+        else
+            return false;   // x < y
+    }
+    
+    // The quick sort function to sort bidders
+    function qsort(uint l, uint r) private{
+        uint i = l;
+        uint j = r;
+        uint pivot = uint(l + (r - l) / 2);
+        while(i <= j){
+            while(compare(i, pivot) == false) i++;
+            while(compare(pivot, j) == false) j--; 
+            if(i <= j){
+                temp = bidders[i];
+                bidders[i] = bidders[j];
+                bidders[j] = temp;
+                i++;
+                j--;
+            }
+        }
+        if(i < r){
+            qsort(i, r);
+        }
+        if(l < j){
+            qsort(l, j);
+        }
+    }
 }
