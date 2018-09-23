@@ -179,4 +179,39 @@ contract Auction{
             qsort(l, j);
         }
     }
+    /*
+        The declare bidders function, can be called only by auctioneer after input deadline is passed.
+        The function sorts the bidders by their values and then adds to the winner list.
+    */
+    function declare_winners() public returns (uint){
+        require(msg.sender == moderator, "Only auctioneer can declare the winners");
+        require(now > input_deadline + 100, "The winners can be declared after the deadline");
+        bool distinct_items;
+        uint items_count = 0;
+        uint item;
+        uint len = bidders.length - 1;
+        qsort(0,len);
+        for(uint i=0; i<bidders.length; i++){
+            if(items_count >= m)    break;
+            distinct_items = true;
+            uint[] storage f = bidders[len-i].u;
+            uint[] storage g = bidders[len-i].v;
+            for(uint j=0;j<f.length;j++){
+                item = (f[j] + g[j])%q;
+                if(items_sold[item]==1){
+                    distinct_items = false;
+                    break;
+                }
+            }
+            if(distinct_items == true){
+                for(j=0;j<f.length;j++){
+                    item = (f[j] + g[j])%q;
+                    items_sold[item] = 1;
+                    items_count += 1;
+                } 
+                winners.push(bidders[len-i]);
+            }
+        }
+        return item;
+    }
 }
