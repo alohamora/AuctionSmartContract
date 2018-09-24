@@ -10,6 +10,7 @@ contract Auction{
     address public moderator;
     uint public m;
     uint public q;
+    bool payment_done = false;
 
     /*
         free_notaries -> no of notaries available for assigning to bidders.
@@ -44,7 +45,9 @@ contract Auction{
     mapping(address => uint) private valid_bidders;
     mapping(address => uint) private valid_notaries;
     mapping(uint => uint) private items_sold;
-
+    mapping(address => uint) private payments;
+    mapping(address => uint) private balance;
+    mapping(address => uint) private is_winner;
     /*
         The arrays for storing registered bidders, notaries and the final winners of the auction
     */
@@ -115,12 +118,15 @@ contract Auction{
             A bidder cannot register multiple times.
             A bidder cannot be registered as a notary before.
     */
-    function register_bidder(uint[] _u,uint[] _v,uint _w1, uint _w2) external before_deadline not_moderator(msg.sender) {
+    function register_bidder(uint[] _u,uint[] _v,uint _w1, uint _w2) external payable before_deadline not_moderator(msg.sender) {
         require(_u.length == _v.length, "Wrong input set");
         require(_u.length <= m, "invalid size");
         require(valid_bidders[msg.sender]==0, "Bidder already registered");
         require(free_notaries > 0, "Notaries not available");
         require(valid_notaries[msg.sender] == 0, "Notary cannot be bidder");
+        require(msg.value == _u.length*((_w1+_w2)%q), "insufficient funds provided");
+        address(this).send(msg.value);
+        balance[msg.sender] = msg.value;
         uint item;
         uint[] memory bid_items = new uint[](m);
         bool is_item;
@@ -213,7 +219,51 @@ contract Auction{
                     items_count += 1;
                 } 
                 winners.push(bidders[len-i]);
-            }
+                is_winner[bidders[len-i].account_id] = 1;            }
         }
+    }
+    // function allot_payments() public{
+    //     require(msg.sender == moderator, "Only auctioneer can allot payments");
+    //     require(winners.length > 0, "Winners not allocated yet");
+    //     payment_done = true;
+    //     uint ind;
+    //     uint item1;
+    //     uint item2;
+    //     bool distinct;
+    //     for(uint i=0;i<winners.length;i++){
+    //         ind = winner_index[i];
+    //         uint[] storage f = winners[i].u;
+    //         uint[] storage g = winners[i].v;
+    //         for(uint j=bidders.length-1;j>=0;j--){
+    //             distinct = false;
+    //             if(j!=ind){
+    //                 for(uint k=0;k<bidders[j].u.length;k++){
+                        
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    function allot_payments() public{
+        require(msg.sender == moderator, "Only auctioneer can allot payments");
+        require(winners.length > 0, "Winners not allocated yet");
+        payment_done = true;
+        for(uint i=0;i<winners.length;i++){
+            payments[winners[i].account_id] = 10;
+        }
+    }
+    function get_contract_balance() public view returns (uint){
+        return this.balance;
+    }
+    function get_items() payable public{
+        require(payment_done == true, "payments not allocated yet");
+        require(is_winner[msg.sender] == 1, "Sorry you lost the auction, use get_withdaw to retrieve your balance");
+        require(msg.value == payments[msg.sender], "Insufficient payment");
+        address(this).send(msg.value);
+    }
+    function withdraw_losing_bid() public payable {
+        require(payment_done == true, "payments not allocated yet");
+        require(is_winner[msg.sender] == 0, "Only losing bids can withdraw");
+        (msg.sender).send(balance[msg.sender]);
     }
 }
